@@ -45,12 +45,17 @@ function Home() {
           <div className="card shadow-sm p-2 mb-5 bg-secondary rounded">
             <div className="card-body text-center bg-dark">
               <img
-                src="/images/codecast.png"
-                alt="Logo"
+                src="/images/sahaba.png"
+                alt="Sahaba Collab Logo"
                 className="img-fluid mx-auto d-block"
-                style={{ maxWidth: "150px" }}
+                style={{ maxWidth: "200px", marginBottom: "2rem" }}
               />
-              <h4 className="card-title text-light mb-4">Enter the ROOM ID</h4>
+
+              <h4 className="card-title text-light mb-4">
+                Welcome to Sahaba Collab ☁️
+                 </h4>
+
+              <p className="text-light">Enter the Room ID to join</p>
 
               <div className="form-group">
                 <input
