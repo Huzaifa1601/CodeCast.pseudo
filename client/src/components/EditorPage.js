@@ -138,13 +138,10 @@ function EditorPage() {
         {/* Client panel */}
         <div className="col-md-2 bg-dark text-light d-flex flex-column">
           <img
-            src="/images/codecast.png"
-            alt="Logo"
-            className="img-fluid mx-auto"
-            style={{ maxWidth: "150px", marginTop: "-43px" }}
-          />
-          <hr style={{ marginTop: "-3rem" }} />
-
+           src="/images/sahaba.png"
+           alt="Sahaba Collab Logo"
+           className="img-fluid mx-auto d-block"
+           style={{ maxWidth: "200px" }}          />
           {/* Client list container */}
           <div className="d-flex flex-column flex-grow-1 overflow-auto">
             <span className="mb-2">Members</span>
