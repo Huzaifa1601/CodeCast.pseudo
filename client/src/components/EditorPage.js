@@ -7,10 +7,10 @@ import { useNavigate, useLocation, Navigate, useParams } from "react-router-dom"
 import { toast } from "react-hot-toast";
 import axios from "axios";
 
-// List of supported languages
+// Supported languages
 const LANGUAGES = [
-  "python3", "java", "cpp", "nodejs", "c", "ruby", "go", "scala",
-  "bash", "sql", "pascal", "csharp", "php", "swift", "rust", "r"
+  "python3", "java", "cpp", "nodejs", "c", "ruby", "go",
+  "scala", "bash", "sql", "pascal", "csharp", "php", "swift", "rust", "r"
 ];
 
 function EditorPage() {
@@ -24,52 +24,43 @@ function EditorPage() {
   const Location = useLocation();
   const navigate = useNavigate();
   const { roomId } = useParams();
+
   const socketRef = useRef(null);
 
-  // ✅ Set API URL dynamically for local & deployed backend
-  const API_URL =
-    process.env.NODE_ENV === "production"
-      ? "https://codecast-pseudo.onrender.com"
-      : "http://localhost:5000";
-
   useEffect(() => {
+    const handleErrors = (err) => {
+      console.log("Error", err);
+      toast.error("Socket connection failed, Try again later");
+      navigate("/");
+    };
+
     const init = async () => {
       socketRef.current = await initSocket();
-      socketRef.current.on("connect_error", (err) => handleErrors(err));
-      socketRef.current.on("connect_failed", (err) => handleErrors(err));
-
-      const handleErrors = (err) => {
-        console.log("Error", err);
-        toast.error("Socket connection failed, Try again later");
-        navigate("/");
-      };
+      socketRef.current.on("connect_error", handleErrors);
+      socketRef.current.on("connect_failed", handleErrors);
 
       socketRef.current.emit(ACTIONS.JOIN, {
         roomId,
         username: Location.state?.username,
       });
 
-      socketRef.current.on(
-        ACTIONS.JOINED,
-        ({ clients, username, socketId }) => {
-          if (username !== Location.state?.username) {
-            toast.success(`${username} joined the room.`);
-          }
-          setClients(clients);
-          socketRef.current.emit(ACTIONS.SYNC_CODE, {
-            code: codeRef.current,
-            socketId,
-          });
+      socketRef.current.on(ACTIONS.JOINED, ({ clients, username, socketId }) => {
+        if (username !== Location.state?.username) {
+          toast.success(`${username} joined the room.`);
         }
-      );
+        setClients(clients);
+        socketRef.current.emit(ACTIONS.SYNC_CODE, {
+          code: codeRef.current,
+          socketId,
+        });
+      });
 
       socketRef.current.on(ACTIONS.DISCONNECTED, ({ socketId, username }) => {
         toast.success(`${username} left the room`);
-        setClients((prev) =>
-          prev.filter((client) => client.socketId !== socketId)
-        );
+        setClients((prev) => prev.filter((client) => client.socketId !== socketId));
       });
     };
+
     init();
 
     return () => {
@@ -85,23 +76,20 @@ function EditorPage() {
     try {
       await navigator.clipboard.writeText(roomId);
       toast.success(`Room ID is copied`);
-    } catch (error) {
-      console.log(error);
+    } catch {
       toast.error("Unable to copy the room ID");
     }
   };
 
-  const leaveRoom = async () => navigate("/");
+  const leaveRoom = () => navigate("/");
 
-  // ✅ Updated Axios call for compile
   const runCode = async () => {
     setIsCompiling(true);
     try {
-      const response = await axios.post(`${API_URL}/compile`, {
+      const response = await axios.post("https://codecast-pseudo.onrender.com/compile", {
         code: codeRef.current,
         language: selectedLanguage,
       });
-      console.log("Backend response:", response.data);
       setOutput(response.data.output || JSON.stringify(response.data));
     } catch (error) {
       console.error("Error compiling code:", error);
@@ -132,12 +120,8 @@ function EditorPage() {
           </div>
           <hr />
           <div className="mt-auto mb-3">
-            <button className="btn btn-success w-100 mb-2" onClick={copyRoomId}>
-              Copy Room ID
-            </button>
-            <button className="btn btn-danger w-100" onClick={leaveRoom}>
-              Leave Room
-            </button>
+            <button className="btn btn-success w-100 mb-2" onClick={copyRoomId}>Copy Room ID</button>
+            <button className="btn btn-danger w-100" onClick={leaveRoom}>Leave Room</button>
           </div>
         </div>
 
@@ -149,20 +133,19 @@ function EditorPage() {
               value={selectedLanguage}
               onChange={(e) => setSelectedLanguage(e.target.value)}
             >
-              {LANGUAGES.map((lang) => (
-                <option key={lang} value={lang}>{lang}</option>
-              ))}
+              {LANGUAGES.map((lang) => <option key={lang} value={lang}>{lang}</option>)}
             </select>
           </div>
+
           <Editor
             socketRef={socketRef}
             roomId={roomId}
-            onCodeChange={(code) => (codeRef.current = code)}
+            onCodeChange={(code) => { codeRef.current = code; }}
           />
         </div>
       </div>
 
-      {/* Compiler toggle button */}
+      {/* Compiler toggle */}
       <button
         className="btn btn-primary position-fixed bottom-0 end-0 m-3"
         onClick={toggleCompileWindow}
@@ -191,9 +174,7 @@ function EditorPage() {
             <button className="btn btn-success me-2" onClick={runCode} disabled={isCompiling}>
               {isCompiling ? "Compiling..." : "Run Code"}
             </button>
-            <button className="btn btn-secondary" onClick={toggleCompileWindow}>
-              Close
-            </button>
+            <button className="btn btn-secondary" onClick={toggleCompileWindow}>Close</button>
           </div>
         </div>
         <pre className="bg-secondary p-3 rounded">
