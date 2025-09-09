@@ -3,33 +3,14 @@ import Client from "./Client";
 import Editor from "./Editor";
 import { initSocket } from "../Socket";
 import { ACTIONS } from "../Actions";
-import {
-  useNavigate,
-  useLocation,
-  Navigate,
-  useParams,
-} from "react-router-dom";
+import { useNavigate, useLocation, Navigate, useParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import axios from "axios";
 
 // List of supported languages
 const LANGUAGES = [
-  "python3",
-  "java",
-  "cpp",
-  "nodejs",
-  "c",
-  "ruby",
-  "go",
-  "scala",
-  "bash",
-  "sql",
-  "pascal",
-  "csharp",
-  "php",
-  "swift",
-  "rust",
-  "r",
+  "python3", "java", "cpp", "nodejs", "c", "ruby", "go", "scala",
+  "bash", "sql", "pascal", "csharp", "php", "swift", "rust", "r"
 ];
 
 function EditorPage() {
@@ -43,8 +24,13 @@ function EditorPage() {
   const Location = useLocation();
   const navigate = useNavigate();
   const { roomId } = useParams();
-
   const socketRef = useRef(null);
+
+  // ✅ Set API URL dynamically for local & deployed backend
+  const API_URL =
+    process.env.NODE_ENV === "production"
+      ? "https://codecast-pseudo.onrender.com"
+      : "http://localhost:5000";
 
   useEffect(() => {
     const init = async () => {
@@ -79,9 +65,9 @@ function EditorPage() {
 
       socketRef.current.on(ACTIONS.DISCONNECTED, ({ socketId, username }) => {
         toast.success(`${username} left the room`);
-        setClients((prev) => {
-          return prev.filter((client) => client.socketId !== socketId);
-        });
+        setClients((prev) =>
+          prev.filter((client) => client.socketId !== socketId)
+        );
       });
     };
     init();
@@ -93,9 +79,7 @@ function EditorPage() {
     };
   }, []);
 
-  if (!Location.state) {
-    return <Navigate to="/" />;
-  }
+  if (!Location.state) return <Navigate to="/" />;
 
   const copyRoomId = async () => {
     try {
@@ -107,14 +91,13 @@ function EditorPage() {
     }
   };
 
-  const leaveRoom = async () => {
-    navigate("/");
-  };
+  const leaveRoom = async () => navigate("/");
 
+  // ✅ Updated Axios call for compile
   const runCode = async () => {
     setIsCompiling(true);
     try {
-      const response = await axios.post("http://localhost:5000/compile", {
+      const response = await axios.post(`${API_URL}/compile`, {
         code: codeRef.current,
         language: selectedLanguage,
       });
@@ -128,9 +111,7 @@ function EditorPage() {
     }
   };
 
-  const toggleCompileWindow = () => {
-    setIsCompileWindowOpen(!isCompileWindowOpen);
-  };
+  const toggleCompileWindow = () => setIsCompileWindowOpen(!isCompileWindowOpen);
 
   return (
     <div className="container-fluid vh-100 d-flex flex-column">
@@ -138,20 +119,18 @@ function EditorPage() {
         {/* Client panel */}
         <div className="col-md-2 bg-dark text-light d-flex flex-column">
           <img
-           src="/images/sahaba.png"
-           alt="Sahaba Collab Logo"
-           className="img-fluid mx-auto d-block"
-           style={{ maxWidth: "200px" }}          />
-          {/* Client list container */}
+            src="/images/sahaba.png"
+            alt="Sahaba Collab Logo"
+            className="img-fluid mx-auto d-block"
+            style={{ maxWidth: "200px" }}
+          />
           <div className="d-flex flex-column flex-grow-1 overflow-auto">
             <span className="mb-2">Members</span>
             {clients.map((client) => (
               <Client key={client.socketId} username={client.username} />
             ))}
           </div>
-
           <hr />
-          {/* Buttons */}
           <div className="mt-auto mb-3">
             <button className="btn btn-success w-100 mb-2" onClick={copyRoomId}>
               Copy Room ID
@@ -164,7 +143,6 @@ function EditorPage() {
 
         {/* Editor panel */}
         <div className="col-md-10 text-light d-flex flex-column">
-          {/* Language selector */}
           <div className="bg-dark p-2 d-flex justify-content-end">
             <select
               className="form-select w-auto"
@@ -172,19 +150,14 @@ function EditorPage() {
               onChange={(e) => setSelectedLanguage(e.target.value)}
             >
               {LANGUAGES.map((lang) => (
-                <option key={lang} value={lang}>
-                  {lang}
-                </option>
+                <option key={lang} value={lang}>{lang}</option>
               ))}
             </select>
           </div>
-
           <Editor
             socketRef={socketRef}
             roomId={roomId}
-            onCodeChange={(code) => {
-              codeRef.current = code;
-            }}
+            onCodeChange={(code) => (codeRef.current = code)}
           />
         </div>
       </div>
@@ -200,9 +173,7 @@ function EditorPage() {
 
       {/* Compiler section */}
       <div
-        className={`bg-dark text-light p-3 ${
-          isCompileWindowOpen ? "d-block" : "d-none"
-        }`}
+        className={`bg-dark text-light p-3 ${isCompileWindowOpen ? "d-block" : "d-none"}`}
         style={{
           position: "fixed",
           bottom: 0,
@@ -217,11 +188,7 @@ function EditorPage() {
         <div className="d-flex justify-content-between align-items-center mb-3">
           <h5 className="m-0">Compiler Output ({selectedLanguage})</h5>
           <div>
-            <button
-              className="btn btn-success me-2"
-              onClick={runCode}
-              disabled={isCompiling}
-            >
+            <button className="btn btn-success me-2" onClick={runCode} disabled={isCompiling}>
               {isCompiling ? "Compiling..." : "Run Code"}
             </button>
             <button className="btn btn-secondary" onClick={toggleCompileWindow}>
