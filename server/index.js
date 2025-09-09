@@ -6,10 +6,11 @@ const { Server } = require("socket.io");
 const ACTIONS = require("./Actions");
 const cors = require("cors");
 const axios = require("axios");
-const server = http.createServer(app);
 require("dotenv").config();
 
-// ✅ Language configuration for JDoodle
+const server = http.createServer(app);
+
+// Language config
 const languageConfig = {
   python3: { versionIndex: "3" },
   java: { versionIndex: "3" },
@@ -29,24 +30,22 @@ const languageConfig = {
   r: { versionIndex: "3" },
 };
 
-// ✅ Allow localhost (dev), backend itself, and deployed frontend
+// CORS
 const allowedOrigins = [
   "http://localhost:3000",
-  "https://codecast-pseudo.onrender.com",   // backend
-  "https://sahaba-collab.onrender.com",     // frontend
+  "https://codecast-pseudo.onrender.com",
+  "https://sahaba-collab.onrender.com",
 ];
 
-// Enable CORS
 app.use(cors({
   origin: allowedOrigins,
   methods: ["GET", "POST"],
   credentials: true,
 }));
 
-// Parse JSON bodies
 app.use(express.json());
 
-// ✅ Socket.IO setup
+// Socket.IO
 const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
@@ -56,14 +55,10 @@ const io = new Server(server, {
 });
 
 const userSocketMap = {};
+
 const getAllConnectedClients = (roomId) => {
   return Array.from(io.sockets.adapter.rooms.get(roomId) || []).map(
-    (socketId) => {
-      return {
-        socketId,
-        username: userSocketMap[socketId],
-      };
-    }
+    (socketId) => ({ socketId, username: userSocketMap[socketId] })
   );
 };
 
@@ -102,14 +97,15 @@ io.on("connection", (socket) => {
         username: userSocketMap[socket.id],
       });
     });
+  });
 
-    console.log("❌ Socket disconnected:", socket.id);
+  socket.on("disconnect", (reason) => {
+    console.log(`❌ Socket disconnected: ${socket.id} | Reason: ${reason}`);
     delete userSocketMap[socket.id];
-    socket.leave();
   });
 });
 
-// ✅ Compiler route
+// Compiler route
 app.post("/compile", async (req, res) => {
   const { code, language } = req.body;
 
