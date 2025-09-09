@@ -1,3 +1,4 @@
+// server.js
 const express = require("express");
 const app = express();
 const http = require("http");
@@ -8,6 +9,7 @@ const axios = require("axios");
 const server = http.createServer(app);
 require("dotenv").config();
 
+// ✅ Language configuration for JDoodle
 const languageConfig = {
   python3: { versionIndex: "3" },
   java: { versionIndex: "3" },
@@ -27,27 +29,29 @@ const languageConfig = {
   r: { versionIndex: "3" },
 };
 
-// ✅ Allow both localhost and deployed frontend
+// ✅ Allow localhost (dev), backend itself, and deployed frontend
 const allowedOrigins = [
   "http://localhost:3000",
-  "https://codecast-pseudo.onrender.com"
+  "https://codecast-pseudo.onrender.com",   // backend
+  "https://sahaba-collab.onrender.com",     // frontend
 ];
 
 // Enable CORS
 app.use(cors({
   origin: allowedOrigins,
   methods: ["GET", "POST"],
-  credentials: true
+  credentials: true,
 }));
 
 // Parse JSON bodies
 app.use(express.json());
 
+// ✅ Socket.IO setup
 const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
     methods: ["GET", "POST"],
-    credentials: true
+    credentials: true,
   },
 });
 
@@ -64,10 +68,14 @@ const getAllConnectedClients = (roomId) => {
 };
 
 io.on("connection", (socket) => {
+  console.log("✅ Socket connected:", socket.id);
+
   socket.on(ACTIONS.JOIN, ({ roomId, username }) => {
     userSocketMap[socket.id] = username;
     socket.join(roomId);
+
     const clients = getAllConnectedClients(roomId);
+    console.log(`📢 ${username} joined room ${roomId}`);
 
     clients.forEach(({ socketId }) => {
       io.to(socketId).emit(ACTIONS.JOINED, {
@@ -95,13 +103,19 @@ io.on("connection", (socket) => {
       });
     });
 
+    console.log("❌ Socket disconnected:", socket.id);
     delete userSocketMap[socket.id];
     socket.leave();
   });
 });
 
+// ✅ Compiler route
 app.post("/compile", async (req, res) => {
   const { code, language } = req.body;
+
+  if (!languageConfig[language]) {
+    return res.status(400).json({ error: "Unsupported language" });
+  }
 
   try {
     const response = await axios.post("https://api.jdoodle.com/v1/execute", {
@@ -114,7 +128,7 @@ app.post("/compile", async (req, res) => {
 
     res.json(response.data);
   } catch (error) {
-    console.error(error);
+    console.error("❌ Compiler error:", error.response?.data || error.message);
     res.status(500).json({ error: "Failed to compile code" });
   }
 });
